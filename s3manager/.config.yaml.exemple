@@ -1,0 +1,6 @@
+s3:
+  endpoint: "https://object.ecstestdrive.com"
+  access_key: ""
+  secret_key: ""
+  namespace: ""
+  region: "us-east-1"
