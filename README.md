@@ -58,7 +58,6 @@ All commands share the following global options:
   --namespace     ECS namespace (required)
   --region        AWS region for V4 signing (optional)
   --auth-method   v2 or v4 (default: v2)
-  --format        output format: xml, json, yaml, table (default: json)
 ```
 
 ### Bucket commands
@@ -75,7 +74,7 @@ All commands share the following global options:
 ```bash
 # Create and get info
 s3cli bucket create mybucket
-s3cli bucket get-info mybucket --format table
+s3cli bucket get-info mybucket
 
 # Enable versioning
 s3cli bucket update mybucket --versioning yes
@@ -91,7 +90,6 @@ s3cli bucket list-objects mybucket --filter logs/
 | `lifecycle apply <bucket> <rule-name> [options]`         | Create & apply a lifecycle rule            |
 | `lifecycle get <bucket>`                                 | Retrieve all lifecycle rules               |
 | `lifecycle list-rules <bucket>`                          | List rule names in memory                  |
-| `lifecycle purge <bucket>`                               | Purge expired objects/delete markers       |
 
 **Rule options for `lifecycle apply`:**
 
@@ -108,9 +106,9 @@ s3cli bucket list-objects mybucket --filter logs/
 s3cli lifecycle apply mybucket expire30 --days 30 --filter logs/ --status Enabled
 
 # Get the rules back
-s3cli lifecycle get mybucket --format yaml
+s3cli lifecycle get mybucket
 ```  
 
 ## Testing
 
-A simple functional test script is provided in `test.py`. It covers bucket creation, versioning toggle, listing, and lifecycle application in JSON, YAML, and table formats.
+A simple functional test script is provided in `test.py`. It covers bucket creation, versioning toggle, listing, and lifecycle application
