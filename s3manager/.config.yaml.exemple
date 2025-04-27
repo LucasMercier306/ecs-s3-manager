@@ -1,6 +1,24 @@
-s3:
+bucket1:
   endpoint: "https://object.ecstestdrive.com"
   access_key: ""
   secret_key: ""
   namespace: ""
   region: "us-east-1"
+  prefix_list:
+    - "04-2015"
+    - "05-2015"
+    - "06-2015"
+    - "07-2015"
+    - "08-2015"
+    - "09-2015"
+    - "10-2015"
+    - "11-2015"
+    - "12-2015"
+
+bucket2:
+  endpoint: "https://object.ecstestdrive.com"
+  access_key: ""
+  secret_key: ""
+  namespace: ""
+  region: "us-east-1"
+  prefix_list: []

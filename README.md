@@ -1,114 +1,91 @@
-# ecs-s3-v2
+ecs-s3-manager
 
-A simple and flexible Python CLI tool to manage Dell EMC ECS S3 resources from terminal.
+A simple command-line interface (CLI) tool to manage Dell EMC ECS (S3-compatible) resources: buckets, prefixes (pseudo-folders), and lifecycle policies.
 
-## Features
+Prerequisites
 
-- **Bucket management**: create, update (versioning), list objects, get info, and delete buckets
-- **Lifecycle rules**: apply, list, retrieve, and purge object lifecycle configurations
-- **Secure authentication**: AWS Signature V2 (with future support for Signature V4)
-- **Flexible output**: JSON, YAML, or human‑readable tables
-- **Config file support**: centralize your ECS credentials in `.config.yaml`
+Python version 3.7 or higher
 
-## Prerequisites
+Configuration file named .config.yaml at the project root, defining one or more profiles (buckets), for example:
 
-- Python **3.6** or newer
-- Access to a Dell EMC ECS S3 endpoint
-- ECS credentials (access key, secret key, namespace)
+bucket1:
+  endpoint: "https://object.ecstestdrive.com"
+  access_key: "AKI..."
+  secret_key: "xyz..."
+  namespace: "my-namespace"
+  region: "us-east-1"
+  prefix_list:
+    - "04-2015"
+    - "05-2015"
+    # ... additional prefixes ...
 
-## Installation
+Install dependencies:
 
-1. Clone the repository
+pip install -r requirements.txt
 
-2. (Optional) Create and activate a virtual environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. (Optional) Install the CLI globally:
-   ```bash
-   pip install .
-   ```
+CLI Overview
 
-## Configuration
+All commands require at least the --profile <name> option to select which profile from .config.yaml to use.
 
-You can either pass credentials via command‑line options or define a `.config.yaml` file in your working directory:
+Usage: s3cli [OPTIONS] COMMAND [ARGS]...
 
-```yaml
-s3:
-  endpoint: "https://object.your-ecs-domain.com"
-  access_key: "YOUR_ACCESS_KEY"
-  secret_key: "YOUR_SECRET_KEY"
-  namespace: "YOUR_NAMESPACE"
-  region: "YOUR_REGION"   # required for AWS Signature V4
-```
+Options:
+  --profile TEXT    Profile name defined in .config.yaml
+  --config PATH     Path to configuration file  [default: .config.yaml]
+  --help            Show this message and exit
 
-## Usage
+Commands:
+  bucket            Bucket management commands
+  create-prefixes   Create prefixes defined in profile
+  lifecycle         Lifecycle policy management
+  batch-lifecycle   Apply lifecycle policies in batch based on prefixes
 
-All commands share the following global options:
+bucket
 
-```text
-  --endpoint      ECS S3 endpoint URL (required)
-  --access-key    ECS access key (required)
-  --secret-key    ECS secret key (required)
-  --namespace     ECS namespace (required)
-  --region        AWS region for V4 signing (optional)
-  --auth-method   v2 or v4 (default: v2)
-```
+bucket create <bucket_name>
+Create a new bucket.
 
-### Bucket commands
+bucket list-objects <bucket_name> [--prefix <prefix>]
+List objects in a bucket, optionally filtered by prefix.
 
-| Command                             | Description                                |
-|-------------------------------------|--------------------------------------------|
-| `bucket create <name>`              | Create a new bucket                       |
-| `bucket get-info <name>`            | Show bucket metadata                      |
-| `bucket update <name> --versioning [yes|no]` | Enable or disable versioning       |
-| `bucket list-objects <name> [--filter <prefix>]` | List objects with optional prefix  |
-| `bucket delete <name>`              | Delete a bucket                           |
+create-prefixes
 
-**Examples:**
-```bash
-# Create and get info
-s3cli bucket create mybucket
-s3cli bucket get-info mybucket
+create-prefixes
+For each prefix in prefix_list, create an empty prefix (folder) by issuing a PUT /bucket/prefix request.
 
-# Enable versioning
-s3cli bucket update mybucket --versioning yes
+batch-lifecycle
 
-# List objects with prefix
-s3cli bucket list-objects mybucket --filter logs/
-```  
+batch-lifecycle <years>
+For each prefix MM-YYYY in prefix_list, calculate an expiration date by adding <years> years to the prefix’s date, then apply a lifecycle rule with an <Expiration><Date>…</Date></Expiration>.
 
-### Lifecycle commands
+lifecycle
 
-| Command                                                  | Description                                |
-|----------------------------------------------------------|--------------------------------------------|
-| `lifecycle apply <bucket> <rule-name> [options]`         | Create & apply a lifecycle rule            |
-| `lifecycle get <bucket>`                                 | Retrieve all lifecycle rules               |
-| `lifecycle list-rules <bucket>`                          | List rule names in memory                  |
+Subcommands for manual lifecycle rule operations:
 
-**Rule options for `lifecycle apply`:**
+lifecycle apply <bucket> <rule_id> [OPTIONS]
+Create and apply a named lifecycle rule to the bucket.
 
-- `--days <n>`  : expire objects after `<n>` days
-- `--years <n>` : expire objects after `<n>` years
-- `--noncurrent-version-expiration` : expire non-current object versions
-- `--expired-object-delete-marker`  : remove expired delete markers
-- `--filter <prefix>` : only apply to keys with given prefix
-- `--status [Enabled|Disabled]` : rule state (default: Enabled)
+Options:
 
-**Example:**
-```bash
-# Apply a 30-day expiration rule
-s3cli lifecycle apply mybucket expire30 --days 30 --filter logs/ --status Enabled
+--days N — expire objects after N days
 
-# Get the rules back
-s3cli lifecycle get mybucket
-```  
+--years M — expire objects after M years
 
-## Testing
+--filter <prefix> — apply rule only to keys with this prefix
 
-A simple functional test script is provided in `test.py`. It covers bucket creation, versioning toggle, listing, and lifecycle application
+--noncurrent-version-expiration — expire non-current versions
+
+--expired-object-delete-marker — remove expired object delete markers
+
+--status Enabled|Disabled — enable or disable the rule
+
+--tag <key:value> — apply rule only to objects with this tag
+
+lifecycle get <bucket>
+Retrieve the raw XML of all lifecycle rules for the bucket.
+
+lifecycle list-rules <bucket>
+List all lifecycle rule IDs for the bucket.
+
+lifecycle clean-up <bucket> <years>
+Remove the oldest lifecycle rule (by prefix date) and add a new rule for the next month after the most recent one, with expiration offset by <years> years.
